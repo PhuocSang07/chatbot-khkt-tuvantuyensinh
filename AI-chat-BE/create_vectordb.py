@@ -12,6 +12,7 @@ MONGODB_COLLECTION = os.getenv("COLLECTION_NAME")
 ATLAS_VECTOR_SEARCH_INDEX_NAME = os.getenv("ATLAS_VECTOR_SEARCH_INDEX_NAME")
 MONGODB_NAME = os.getenv("DB_NAME")
 MONGODB_ATLAS_CLUSTER_URI = os.getenv("MONGODB_ATLAS_CLUSTER_URI")
+EMBEDDING_MODEL_NAME = os.getenv("MODEL_EMBEDDING_NAME")
 
 client = MongoClient(MONGODB_ATLAS_CLUSTER_URI)
 mongo_collection = client[MONGODB_NAME][MONGODB_COLLECTION]
@@ -24,13 +25,13 @@ txt_loader = DirectoryLoader('./documents',
                             )
 
 documents_loader = txt_loader.load()
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024,
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048,
                                                 chunk_overlap=512)
 
 chunks = text_splitter.split_documents(documents_loader)
 
 embeddings = HuggingFaceEmbeddings(
-    model_name='hiieu/halong_embedding',
+    model_name=EMBEDDING_MODEL_NAME,
     model_kwargs={'device': 'cpu'},
     encode_kwargs= {'normalize_embeddings': False}
     )

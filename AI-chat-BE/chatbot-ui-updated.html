@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Router Chatbot</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6e9ae3;
+            --background-color: #f5f7fa;
+            --chat-bg: #ffffff;
+            --user-bubble: #e3f2fd;
+            --bot-bubble: #f1f8e9;
+            --border-color: #e0e0e0;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            display: flex;
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: var(--chat-bg);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            max-width: 80%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: var(--user-bubble);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-message {
+            background-color: var(--bot-bubble);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            color: #777;
+            margin-bottom: 0.2rem;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 1rem;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-family: inherit;
+            resize: none;
+        }
+
+        #send-button {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        #send-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: #f1f1f1;
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            font-style: italic;
+            color: #555;
+        }
+
+        .system-message {
+            align-self: center;
+            background-color: #f1f1f1;
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            margin: 0.5rem 0;
+            font-style: italic;
+            color: #555;
+        }
+
+        @media (max-width: 768px) {
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        /* Code block formatting */
+        pre {
+            background-color: #f4f4f4;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Markdown styling */
+        .bot-message h1, .bot-message h2, .bot-message h3 {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .bot-message ul, .bot-message ol {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .bot-message p {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Server status indicator */
+        .server-status {
+            text-align: center;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+
+        .status-online {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-offline {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Semantic Router Chatbot</h1>
+    </header>
+
+    <div class="container">
+        <div id="server-status" class="server-status"></div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-info">Chatbot</div>
+                    Hello! How can I help you today?
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <textarea id="message-input" placeholder="Type your message here..." rows="2"></textarea>
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const chatMessages = document.getElementById('chat-messages');
+            const serverStatus = document.getElementById('server-status');
+            
+            // API base URL - pointing to the Flask server
+            const API_URL = 'http://127.0.0.1:5000';
+            
+            // Store conversation history
+            let conversationHistory = [];
+            let turnCounter = 0;
+
+            // Check server status
+            checkServerStatus();
+
+            // Function to check if the server is online
+            function checkServerStatus() {
+                fetch(`${API_URL}/`, {
+                    method: 'HEAD',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        serverStatus.textContent = 'Server is online';
+                        serverStatus.className = 'server-status status-online';
+                    } else {
+                        serverStatus.textContent = 'Server is responding but with errors';
+                        serverStatus.className = 'server-status status-offline';
+                    }
+                })
+                .catch(error => {
+                    serverStatus.textContent = 'Cannot connect to server. Make sure it\'s running at ' + API_URL;
+                    serverStatus.className = 'server-status status-offline';
+                    console.error('Server connection error:', error);
+                });
+            }
+
+            // Function to add messages to the chat
+            function addMessage(message, isUser = false) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add(isUser ? 'user-message' : 'bot-message');
+                
+                const messageInfo = document.createElement('div');
+                messageInfo.classList.add('message-info');
+                messageInfo.textContent = isUser ? 'You' : 'Chatbot';
+                messageElement.appendChild(messageInfo);
+                
+                // Support for basic markdown in bot messages
+                if (!isUser) {
+                    messageElement.innerHTML += parseMarkdown(message);
+                } else {
+                    messageElement.innerHTML += message;
+                }
+                
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Very basic markdown parser
+            function parseMarkdown(text) {
+                // Handle code blocks
+                text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+                
+                // Handle inline code
+                text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Handle bold
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Handle italic
+                text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                
+                // Handle links
+                text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+                
+                // Handle line breaks
+                text = text.replace(/\n/g, '<br>');
+                
+                return text;
+            }
+
+            // Function to show typing indicator
+            function showTypingIndicator() {
+                const indicator = document.createElement('div');
+                indicator.id = 'typing-indicator';
+                indicator.classList.add('typing-indicator');
+                indicator.textContent = 'Chatbot is typing...';
+                chatMessages.appendChild(indicator);
+                indicator.style.display = 'block';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return indicator;
+            }
+
+            // Function to hide typing indicator
+            function hideTypingIndicator(indicator) {
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+
+            // Function to send message to the backend
+            async function sendMessage(message) {
+                // Show user message
+                addMessage(message, true);
+                
+                // Show typing indicator
+                const typingIndicator = showTypingIndicator();
+                
+                // Add user message to history
+                conversationHistory.push({
+                    role: "user",
+                    content: message
+                });
+                
+                try {
+                    const response = await fetch(`${API_URL}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            history: conversationHistory,
+                            turn: turnCounter
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Hide typing indicator
+                    hideTypingIndicator(typingIndicator);
+                    
+                    // Display bot response
+                    addMessage(data.response);
+                    
+                    // Add bot message to history
+                    conversationHistory.push({
+                        role: "assistant",
+                        content: data.response
+                    });
+                    
+                    // Increment turn counter
+                    turnCounter++;
+                    
+                    // Check if reflection happened
+                    if (data.reflected) {
+                        const systemMessage = document.createElement('div');
+                        systemMessage.classList.add('system-message');
+                        systemMessage.textContent = 'The conversation has been summarized for better context understanding.';
+                        chatMessages.appendChild(systemMessage);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    hideTypingIndicator(typingIndicator);
+                    
+                    // Show error message
+                    const errorMessage = document.createElement('div');
+                    errorMessage.classList.add('system-message');
+                    errorMessage.textContent = 'Sorry, something went wrong. Please try again.';
+                    chatMessages.appendChild(errorMessage);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            }
+            
+            // Handle send button click
+            sendButton.addEventListener('click', function() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    sendMessage(message);
+                    messageInput.value = '';
+                }
+            });
+            
+            // Handle Enter key press to send message
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const message = messageInput.value.trim();
+                    if (message) {
+                        sendMessage(message);
+                        messageInput.value = '';
+                    }
+                }
+            });
+
+            // Auto-focus on the input field when the page loads
+            messageInput.focus();
+
+            // Periodically check server status (every 30 seconds)
+            setInterval(checkServerStatus, 30000);
+        });
+    </script>
+</body>
+</html>
